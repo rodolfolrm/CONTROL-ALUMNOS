@@ -269,10 +269,9 @@ function abrirInforme() {
   // 🔹 Cargar el logo desde el archivo local
   const img = new Image();
   img.src = "logo_cito.png"; // debe estar junto al index.html
-
   img.onload = () => {
     // Agregar logo y encabezado institucional
-    doc.addImage(img, "logo_cito.png", 15, 10, 18, 18);
+    doc.addImage(img, "logo_cito.png", 18, 15, 18, 18);
     doc.setFont("helvetica", "bold");
     doc.text("CENTRO DE SALUD FAMILIAR SAN PABLO", 45, 20);
     doc.setFontSize(10);
