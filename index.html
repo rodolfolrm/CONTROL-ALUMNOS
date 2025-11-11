@@ -4,9 +4,384 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Control de Estudiantes en Práctica</title>
-<!-- contenido completo del HTML proporcionado -->
+<style>
+  * { box-sizing: border-box; font-family: Arial, sans-serif; }
+  body { margin: 0; display: flex; height: 100vh; background: #f0f0f0; }
+
+  .sidebar {
+    width: 220px; background: rgba(50, 50, 50, 0.85);
+    backdrop-filter: blur(6px); color: white; padding: 20px;
+    display: flex; flex-direction: column; align-items: stretch;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+  }
+  .logo {
+    width: 100%; height: 100px; background: rgba(255,255,255,0.1);
+    border-radius: 8px; margin-bottom: 20px; display: flex;
+    align-items: center; justify-content: center; color: #aaa; font-size: 14px;
+  }
+  .sidebar button {
+    background: rgba(255,255,255,0.15); border: none; color: white;
+    margin: 5px 0; padding: 10px; border-radius: 6px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .sidebar button:hover { background: rgba(255,255,255,0.3); }
+
+  .main { flex: 1; padding: 20px; overflow-y: auto; }
+  h1 { margin-top: 0; color: #333; }
+
+  form {
+    background: white; padding: 20px; border-radius: 10px;
+    box-shadow: 0 0 6px rgba(0,0,0,0.1);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  label { font-weight: bold; color: #444; }
+  input, select { padding: 8px; border: 1px solid #ccc; border-radius: 5px; width: 100%; }
+
+  table {
+    width: 100%; margin-top: 20px; border-collapse: collapse; background: white;
+    border-radius: 10px; box-shadow: 0 0 6px rgba(0,0,0,0.1);
+  }
+  th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+  th { background: #555; color: white; }
+  tr:hover { background: #f3f3f3; cursor: pointer; }
+  tr.selected { background: #b7d5ff !important; }
+
+  /* Modal base */
+  .modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 1000;
+  }
+  .modal-content {
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+    padding: 20px; border-radius: 10px; width: 420px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  }
+  .filtro-item { display: flex; flex-direction: column; margin: 10px 0; }
+  .modal button { margin-top: 10px; padding: 8px 14px; border: none; border-radius: 5px; cursor: pointer; }
+  .btn-aplicar { background: #155eef; color: white; }
+  .btn-cerrar { background: #999; color: white; margin-left: 10px; }
+
+  /* Modal Vista PDF */
+  .modal-vista {
+    position: fixed; inset: 0; display: none; background: rgba(0,0,0,0.6);
+    align-items: stretch; justify-content: center; z-index: 1100;
+  }
+  .vista-wrap {
+    background: #fff; margin: 40px; border-radius: 10px; display: flex; flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35); overflow: hidden;
+  }
+  .vista-toolbar {
+    display: flex; gap: 10px; align-items: center; padding: 10px; background: #f7f8fb; border-bottom: 1px solid #e5e7eb;
+  }
+  .vista-toolbar h3 { margin: 0; font-size: 16px; color: #333; flex: 1; }
+  .vista-toolbar button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; }
+  .btn-descargar { background: #155eef; color: #fff; }
+  .btn-imprimir { background: #334155; color: #fff; }
+  .btn-cerrar-2 { background: #9ca3af; color: #fff; }
+  .vista-body { flex: 1; min-height: 60vh; }
+  .vista-body iframe { width: 100%; height: 100%; border: none; }
+  @media (max-width: 768px) {
+    .vista-wrap { margin: 10px; }
+  }
+</style>
 </head>
 <body>
-<!-- Aplicación completa -->
+
+<div class="sidebar">
+  <div class="logo">[Espacio para logo]</div>
+  <button onclick="nuevoRegistro()">Nuevo</button>
+  <button onclick="guardarRegistro()">Guardar</button>
+  <button onclick="eliminarRegistro()">Eliminar</button>
+  <button onclick="abrirFiltro()">Buscar</button>
+  <button onclick="abrirInforme()">Informe</button>
+  <button onclick="limpiarFormulario()">Limpiar</button>
+  <button onclick="borrarTodo()">Borrar todo</button>
+</div>
+
+<div class="main">
+  <h1>Control de Estudiantes en Práctica</h1>
+  <form id="formulario">
+    <div><label>Nombre:</label><input type="text" id="nombre" required></div>
+    <div><label>RUT:</label><input type="text" id="rut" required></div>
+    <div><label>Institución:</label><input type="text" id="institucion" required></div>
+    <div><label>Carrera:</label><input type="text" id="carrera" required></div>
+    <div><label>Cantidad de días:</label><input type="number" id="tiempo" min="1" required oninput="calcularFechaSalida()"></div>
+    <div><label>Fecha ingreso:</label><input type="date" id="fechaIngreso" required onchange="calcularFechaSalida()"></div>
+    <div><label>Fecha salida (auto):</label><input type="date" id="fechaSalida" readonly></div>
+    <div><label>Evaluación:</label>
+      <select id="evaluacion">
+        <option value="Pendiente">Pendiente</option>
+        <option value="Sí">Sí</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+  </form>
+
+  <table id="tabla">
+    <thead>
+      <tr>
+        <th>Nombre</th><th>RUT</th><th>Institución</th><th>Carrera</th>
+        <th>Días</th><th>Ingreso</th><th>Salida</th><th>Evaluación</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Modal de filtros para Informe -->
+<div class="modal" id="modalInforme">
+  <div class="modal-content">
+    <h2>Generar Informe</h2>
+    <div class="filtro-item"><label>Institución:</label><input type="text" id="infInstitucion"></div>
+    <div class="filtro-item"><label>Carrera:</label><input type="text" id="infCarrera"></div>
+    <div class="filtro-item">
+      <label>Evaluación:</label>
+      <select id="infEvaluacion">
+        <option value="">-- Cualquiera --</option>
+        <option value="Pendiente">Pendiente</option>
+        <option value="Sí">Sí</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn-aplicar" onclick="generarInforme()">Vista previa</button>
+      <button class="btn-cerrar" onclick="cerrarInforme()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Vista Previa PDF -->
+<div class="modal-vista" id="modalVistaPDF" aria-hidden="true">
+  <div class="vista-wrap" style="width: min(1000px, 95vw);">
+    <div class="vista-toolbar">
+      <h3>Vista previa del informe</h3>
+      <button class="btn-descargar" id="btnDescargar" type="button">Descargar</button>
+      <button class="btn-imprimir" id="btnImprimir" type="button">Imprimir</button>
+      <button class="btn-cerrar-2" type="button" onclick="cerrarVistaPDF()">Cerrar</button>
+    </div>
+    <div class="vista-body">
+      <iframe id="pdfVista" title="Vista previa PDF"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- jsPDF y AutoTable -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+let registros = JSON.parse(localStorage.getItem("estudiantesPractica")) || [];
+let seleccionado = -1;
+let pdfBlobUrl = null; // guardamos aquí la URL del blob para reutilizar en imprimir/descargar
+
+function mostrarTabla(lista = registros) {
+  const tbody = document.querySelector("#tabla tbody");
+  tbody.innerHTML = "";
+  lista.forEach((r, i) => {
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${r.nombre}</td>
+      <td>${r.rut}</td>
+      <td>${r.institucion}</td>
+      <td>${r.carrera}</td>
+      <td>${r.tiempo}</td>
+      <td>${r.fechaIngreso}</td>
+      <td>${r.fechaSalida}</td>
+      <td>${r.evaluacion}</td>`;
+    fila.onclick = () => seleccionarFila(i, fila);
+    tbody.appendChild(fila);
+  });
+}
+
+function seleccionarFila(i, fila) {
+  document.querySelectorAll("#tabla tr").forEach(tr => tr.classList.remove("selected"));
+  fila.classList.add("selected");
+  const r = registros[i];
+  nombre.value = r.nombre; rut.value = r.rut;
+  institucion.value = r.institucion; carrera.value = r.carrera;
+  tiempo.value = r.tiempo; fechaIngreso.value = r.fechaIngreso;
+  fechaSalida.value = r.fechaSalida; evaluacion.value = r.evaluacion;
+  seleccionado = i;
+}
+
+function obtenerDatos() {
+  return {
+    nombre: nombre.value.trim(), rut: rut.value.trim(),
+    institucion: institucion.value.trim(), carrera: carrera.value.trim(),
+    tiempo: tiempo.value, fechaIngreso: fechaIngreso.value,
+    fechaSalida: fechaSalida.value, evaluacion: evaluacion.value
+  };
+}
+
+function guardarRegistro() {
+  const r = obtenerDatos();
+  if (!r.nombre || !r.rut) return alert("Ingrese nombre y RUT");
+  if (seleccionado === -1) registros.push(r);
+  else registros[seleccionado] = r;
+  localStorage.setItem("estudiantesPractica", JSON.stringify(registros));
+  mostrarTabla(); limpiarFormulario(); seleccionado = -1;
+}
+
+function eliminarRegistro() {
+  if (seleccionado === -1) return alert("Seleccione un registro para eliminar.");
+  if (confirm("¿Eliminar este registro?")) {
+    registros.splice(seleccionado, 1);
+    localStorage.setItem("estudiantesPractica", JSON.stringify(registros));
+    mostrarTabla(); limpiarFormulario(); seleccionado = -1;
+  }
+}
+
+function limpiarFormulario() {
+  document.getElementById("formulario").reset();
+  fechaSalida.value = "";
+  document.querySelectorAll("#tabla tr").forEach(tr => tr.classList.remove("selected"));
+}
+
+function nuevoRegistro() { limpiarFormulario(); seleccionado = -1; }
+
+function borrarTodo() {
+  if (confirm("¿Borrar todos los registros?")) {
+    registros = [];
+    localStorage.setItem("estudiantesPractica", JSON.stringify(registros));
+    mostrarTabla();
+  }
+}
+
+function calcularFechaSalida() {
+  const f = fechaIngreso.value;
+  const d = parseInt(tiempo.value);
+  if (f && d > 0) {
+    const base = new Date(f);
+    base.setDate(base.getDate() + d);
+    fechaSalida.value = base.toISOString().split("T")[0];
+  }
+}
+
+// --- INFORME ---
+function abrirInforme() { document.getElementById("modalInforme").style.display = "flex"; }
+function cerrarInforme() { document.getElementById("modalInforme").style.display = "none"; }
+
+// Stub para evitar errores al pulsar "Buscar"
+function abrirFiltro(){ alert("Búsqueda avanzada: próximo módulo."); }
+
+function generarInforme() {
+  const inst = (document.getElementById("infInstitucion").value || "").toLowerCase();
+  const carr = (document.getElementById("infCarrera").value || "").toLowerCase();
+  const evalSel = document.getElementById("infEvaluacion").value;
+
+  const filtrados = registros.filter(x =>
+    (!inst || (x.institucion||"").toLowerCase().includes(inst)) &&
+    (!carr || (x.carrera||"").toLowerCase().includes(carr)) &&
+    (!evalSel || x.evaluacion === evalSel)
+  );
+  if (filtrados.length === 0) { alert("No hay registros que coincidan con el filtro."); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+
+  // Encabezado
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("CENTRO DE SALUD FAMILIAR SAN PABLO", 20, 20);
+  doc.setFontSize(11);
+  doc.text("UNIDAD DE CALIDAD Y SEGURIDAD DEL PACIENTE", 20, 26);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 170, 20, { align: "right" });
+  doc.text("Informe de estudiantes en práctica", 105, 40, { align: "center" });
+  doc.line(20, 42, 195, 42);
+
+  // Tabla
+  const columnas = [
+    { header: "Nombre", dataKey: "nombre" },
+    { header: "RUT", dataKey: "rut" },
+    { header: "Institución", dataKey: "institucion" },
+    { header: "Carrera", dataKey: "carrera" },
+    { header: "Días", dataKey: "tiempo" },
+    { header: "Ingreso", dataKey: "fechaIngreso" },
+    { header: "Salida", dataKey: "fechaSalida" },
+    { header: "Evaluación", dataKey: "evaluacion" }
+  ];
+  doc.autoTable({
+    columns: columnas,
+    body: filtrados,
+    startY: 48,
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [40, 68, 148], textColor: 255, halign: 'center' },
+    bodyStyles: { halign: 'center' },
+    alternateRowStyles: { fillColor: [245, 247, 255] },
+    margin: { left: 20, right: 15 }
+  });
+
+  // Pie
+  const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY : 48) + 10;
+  doc.setFontSize(9);
+  doc.text("Unidad de Calidad y Seguridad del Paciente – CESFAM San Pablo", 105, finalY, { align: "center" });
+  doc.text("Logo institucional aquí →", 180, 15);
+
+  // === Vista previa segura con Blob URL ===
+  // Limpiar URL previa si existe
+  if (pdfBlobUrl) { URL.revokeObjectURL(pdfBlobUrl); pdfBlobUrl = null; }
+
+  const blob = doc.output("blob");                     // Blob del PDF
+  pdfBlobUrl = URL.createObjectURL(blob);              // URL segura
+  const frame = document.getElementById("pdfVista");
+  frame.src = pdfBlobUrl;
+
+  // Preparar botones de la toolbar
+  const btnDesc = document.getElementById("btnDescargar");
+  const btnPrint = document.getElementById("btnImprimir");
+
+  btnDesc.onclick = () => {
+    const a = document.createElement("a");
+    a.href = pdfBlobUrl;
+    a.download = "Informe_Estudiantes_Practica.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  btnPrint.onclick = () => {
+    try {
+      // Intento de imprimir el iframe directamente
+      const fr = document.getElementById("pdfVista");
+      if (fr && fr.contentWindow) {
+        fr.contentWindow.focus();
+        fr.contentWindow.print();
+      } else {
+        // Fallback: abrir en nueva pestaña y mandar imprimir
+        const w = window.open(pdfBlobUrl, "_blank");
+        if (w) {
+          // Algunos navegadores imprimen al cargar, otros no
+          w.onload = () => { try { w.print(); } catch(e){} };
+        } else {
+          alert("El navegador bloqueó la impresión en pestaña. Descarga el PDF e imprime.");
+        }
+      }
+    } catch(e) {
+      // Fallback final
+      const w = window.open(pdfBlobUrl, "_blank");
+      if (!w) alert("Tu navegador bloqueó la impresión. Descarga el PDF e imprime.");
+    }
+  };
+
+  // Mostrar modal de vista
+  document.getElementById("modalVistaPDF").style.display = "flex";
+  cerrarInforme();
+}
+
+function cerrarVistaPDF() {
+  const modal = document.getElementById("modalVistaPDF");
+  modal.style.display = "none";
+  const frame = document.getElementById("pdfVista");
+  frame.src = "about:blank";
+  if (pdfBlobUrl) { URL.revokeObjectURL(pdfBlobUrl); pdfBlobUrl = null; }
+}
+
+// Inicializar
+mostrarTabla();
+</script>
 </body>
 </html>
