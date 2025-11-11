@@ -260,7 +260,47 @@ function calcularFechaSalida() {
 }
 
 // --- INFORME ---
-function abrirInforme() { document.getElementById("modalInforme").style.display = "flex"; }
+function abrirInforme() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "letter" });
+
+  // 🔹 Cargar el logo desde el archivo local
+  const img = new Image();
+  img.src = "logo.png"; // debe estar junto al index.html
+
+  img.onload = () => {
+    // Agregar logo y encabezado institucional
+    doc.addImage(img, "PNG", 15, 10, 25, 25);
+    doc.setFont("helvetica", "bold");
+    doc.text("CENTRO DE SALUD FAMILIAR SAN PABLO", 45, 20);
+    doc.setFontSize(10);
+    doc.text("UNIDAD DE CALIDAD Y SEGURIDAD DEL PACIENTE", 45, 26);
+
+    // Línea divisoria
+    doc.line(20, 30, 195, 30);
+
+    // Tabla principal
+    doc.autoTable({
+      head: [["Nombre", "RUT", "Institución", "Carrera", "Días", "Ingreso", "Salida", "Evaluación"]],
+      body: registros.map(r => [
+        r.nombre, r.rut, r.institucion, r.carrera,
+        r.tiempo, r.fechaIngreso, r.fechaSalida, r.evaluacion
+      ]),
+      startY: 36,
+      styles: { fontSize: 9, halign: "center" },
+      headStyles: { fillColor: [40, 68, 148] }
+    });
+
+    // Pie institucional
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(9);
+    doc.text("Unidad de Calidad y Seguridad del Paciente – CESFAM San Pablo", 105, finalY, { align: "center" });
+
+    // Guardar PDF
+    doc.save("Informe_Estudiantes.pdf");
+  };
+}
+ }
 function cerrarInforme() { document.getElementById("modalInforme").style.display = "none"; }
 
 // Stub para evitar errores al pulsar "Buscar"
