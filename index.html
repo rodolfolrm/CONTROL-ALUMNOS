@@ -90,7 +90,7 @@
 <body>
 
 <div class="sidebar">
-  <div class="logo">logo cito.png</div>
+  <div class="logo">"logo cito.png"</div>
   <button onclick="nuevoRegistro()">Nuevo</button>
   <button onclick="guardarRegistro()">Guardar</button>
   <button onclick="eliminarRegistro()">Eliminar</button>
@@ -358,7 +358,7 @@ function generarInforme() {
   const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY : 48) + 10;
   doc.setFontSize(9);
   doc.text("Unidad de Calidad y Seguridad del Paciente – CESFAM San Pablo", 105, finalY, { align: "center" });
-  doc.text("Logo institucional aquí →", 180, 15);
+  doc.text("Logo cito.png", 180, 15);
 
   // === Vista previa segura con Blob URL ===
   // Limpiar URL previa si existe
