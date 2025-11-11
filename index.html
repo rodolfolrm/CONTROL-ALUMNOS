@@ -271,11 +271,11 @@ function abrirInforme() {
   img.src = "logo_cito.png"; // debe estar junto al index.html
   img.onload = () => {
     // Agregar logo y encabezado institucional
-    doc.addImage(img, "logo_cito.png", 18, 12, 20, 20);
+    doc.addImage(img, "logo_cito.png", 18, 8, 25, 20);
     doc.setFont("helvetica", "bold");
     doc.text("CENTRO DE SALUD FAMILIAR SAN PABLO", 45, 20);
     doc.setFontSize(10);
-    doc.text("UNIDAD DE CALIDAD Y SEGURIDAD DEL PACIENTE", 45, 26);
+    doc.text("RELACION ASISTENCIAL DOCENTE", 45, 26);
 
     // Línea divisoria
     doc.line(20, 30, 195, 30);
@@ -295,7 +295,7 @@ function abrirInforme() {
     // Pie institucional
     const finalY = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(9);
-    doc.text("Unidad de Calidad y Seguridad del Paciente – CESFAM San Pablo", 105, finalY, { align: "center" });
+    doc.text("Relación Asistencial Docente – CESFAM San Pablo", 105, finalY, { align: "center" });
 
     // Guardar PDF
     doc.save("Informe_Estudiantes.pdf");
@@ -326,7 +326,7 @@ function generarInforme() {
   doc.setFontSize(13);
   doc.text("CENTRO DE SALUD FAMILIAR SAN PABLO", 20, 20);
   doc.setFontSize(11);
-  doc.text("UNIDAD DE CALIDAD Y SEGURIDAD DEL PACIENTE", 20, 26);
+  doc.text("RELACION ASISTENCIAL DOCENTE", 20, 26);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 170, 20, { align: "right" });
@@ -358,7 +358,7 @@ function generarInforme() {
   // Pie
   const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY : 48) + 10;
   doc.setFontSize(9);
-  doc.text("Unidad de Calidad y Seguridad del Paciente – CESFAM San Pablo", 105, finalY, { align: "center" });
+  doc.text("Relacion Asistencial Docente – CESFAM San Pablo", 105, finalY, { align: "center" });
   doc.text("Logo cito.png", 180, 15);
 
   // === Vista previa segura con Blob URL ===
