@@ -279,11 +279,9 @@ function calcularFechaSalida() {
 function abrirFiltro() {
   document.getElementById("modalBuscar").style.display = "flex";
 }
-
 function cerrarFiltro() {
   document.getElementById("modalBuscar").style.display = "none";
 }
-
 function aplicarFiltro() {
   const n = (document.getElementById("busNombre").value || "").toLowerCase();
   const r = (document.getElementById("busRut").value || "").toLowerCase();
@@ -347,7 +345,6 @@ function generarInforme() {
   if (filtrados.length === 0) { alert("No hay registros que coincidan con el filtro."); return; }
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "portrait",
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
 
   // Encabezado
