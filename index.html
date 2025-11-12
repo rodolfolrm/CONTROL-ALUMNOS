@@ -154,6 +154,21 @@
   </div>
 </div>
 
+<!-- 🔍 Modal de búsqueda -->
+<div class="modal" id="modalBuscar">
+  <div class="modal-content">
+    <h2>Buscar estudiante</h2>
+    <div class="filtro-item"><label>Nombre:</label><input type="text" id="busNombre"></div>
+    <div class="filtro-item"><label>RUT:</label><input type="text" id="busRut"></div>
+    <div class="filtro-item"><label>Institución:</label><input type="text" id="busInstitucion"></div>
+    <div class="filtro-item"><label>Carrera:</label><input type="text" id="busCarrera"></div>
+    <div style="text-align:center;">
+      <button class="btn-aplicar" onclick="aplicarFiltro()">Aplicar filtro</button>
+      <button class="btn-cerrar" onclick="cerrarFiltro()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Vista Previa PDF -->
 <div class="modal-vista" id="modalVistaPDF" aria-hidden="true">
   <div class="vista-wrap" style="width: min(1000px, 95vw);">
@@ -169,14 +184,13 @@
   </div>
 </div>
 
-<!-- jsPDF y AutoTable -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
 <script>
 let registros = JSON.parse(localStorage.getItem("estudiantesPractica")) || [];
 let seleccionado = -1;
-let pdfBlobUrl = null; // guardamos aquí la URL del blob para reutilizar en imprimir/descargar
+let pdfBlobUrl = null;
 
 function mostrarTabla(lista = registros) {
   const tbody = document.querySelector("#tabla tbody");
@@ -261,26 +275,47 @@ function calcularFechaSalida() {
   }
 }
 
+// --- NUEVO: BÚSQUEDA AVANZADA ---
+function abrirFiltro() {
+  document.getElementById("modalBuscar").style.display = "flex";
+}
+
+function cerrarFiltro() {
+  document.getElementById("modalBuscar").style.display = "none";
+}
+
+function aplicarFiltro() {
+  const n = (document.getElementById("busNombre").value || "").toLowerCase();
+  const r = (document.getElementById("busRut").value || "").toLowerCase();
+  const i = (document.getElementById("busInstitucion").value || "").toLowerCase();
+  const c = (document.getElementById("busCarrera").value || "").toLowerCase();
+
+  const filtrados = registros.filter(x =>
+    (!n || (x.nombre||"").toLowerCase().includes(n)) &&
+    (!r || (x.rut||"").toLowerCase().includes(r)) &&
+    (!i || (x.institucion||"").toLowerCase().includes(i)) &&
+    (!c || (x.carrera||"").toLowerCase().includes(c))
+  );
+
+  if (filtrados.length === 0) alert("No se encontraron coincidencias.");
+  mostrarTabla(filtrados);
+  cerrarFiltro();
+}
+
 // --- INFORME ---
 function abrirInforme() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "letter" });
 
-  // 🔹 Cargar el logo desde el archivo local
   const img = new Image();
-  img.src = "logo_cito.png"; // debe estar junto al index.html
+  img.src = "logo_cito.png";
   img.onload = () => {
-    // Agregar logo y encabezado institucional
     doc.addImage(img, "logo_cito.png", 18, 8, 25, 20);
     doc.setFont("helvetica", "bold");
     doc.text("CENTRO DE SALUD FAMILIAR SAN PABLO", 45, 20);
     doc.setFontSize(10);
     doc.text("RELACION ASISTENCIAL DOCENTE", 45, 26);
-
-    // Línea divisoria
     doc.line(20, 30, 195, 30);
-
-    // Tabla principal
     doc.autoTable({
       head: [["Nombre", "RUT", "Institución", "Carrera", "Días", "Ingreso", "Salida", "Evaluación"]],
       body: registros.map(r => [
@@ -291,20 +326,13 @@ function abrirInforme() {
       styles: { fontSize: 9, halign: "center" },
       headStyles: { fillColor: [40, 68, 148] }
     });
-
-    // Pie institucional
     const finalY = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(9);
     doc.text("Relación Asistencial Docente – CESFAM San Pablo", 105, finalY, { align: "center" });
-
-    // Guardar PDF
     doc.save("Informe_Estudiantes.pdf");
   };
 }
 function cerrarInforme() { document.getElementById("modalInforme").style.display = "none"; }
-
-// Stub para evitar errores al pulsar "Buscar"
-function abrirFiltro(){ alert("Búsqueda avanzada: próximo módulo."); }
 
 function generarInforme() {
   const inst = (document.getElementById("infInstitucion").value || "").toLowerCase();
@@ -319,6 +347,7 @@ function generarInforme() {
   if (filtrados.length === 0) { alert("No hay registros que coincidan con el filtro."); return; }
 
   const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait",
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
 
   // Encabezado
@@ -355,71 +384,25 @@ function generarInforme() {
     margin: { left: 20, right: 15 }
   });
 
-  // Pie
   const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY : 48) + 10;
   doc.setFontSize(9);
-  doc.text("Relacion Asistencial Docente – CESFAM San Pablo", 105, finalY, { align: "center" });
-  doc.text("Logo cito.png", 180, 15);
+  doc.text("Relación Asistencial Docente – CESFAM San Pablo", 105, finalY, { align: "center" });
 
-  // === Vista previa segura con Blob URL ===
-  // Limpiar URL previa si existe
-  if (pdfBlobUrl) { URL.revokeObjectURL(pdfBlobUrl); pdfBlobUrl = null; }
-
-  const blob = doc.output("blob");                     // Blob del PDF
-  pdfBlobUrl = URL.createObjectURL(blob);              // URL segura
+  const blob = doc.output("blob");
+  const pdfBlobUrl = URL.createObjectURL(blob);
   const frame = document.getElementById("pdfVista");
   frame.src = pdfBlobUrl;
-
-  // Preparar botones de la toolbar
-  const btnDesc = document.getElementById("btnDescargar");
-  const btnPrint = document.getElementById("btnImprimir");
-
-  btnDesc.onclick = () => {
-    const a = document.createElement("a");
-    a.href = pdfBlobUrl;
-    a.download = "Informe_Estudiantes_Practica.pdf";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  btnPrint.onclick = () => {
-    try {
-      // Intento de imprimir el iframe directamente
-      const fr = document.getElementById("pdfVista");
-      if (fr && fr.contentWindow) {
-        fr.contentWindow.focus();
-        fr.contentWindow.print();
-      } else {
-        // Fallback: abrir en nueva pestaña y mandar imprimir
-        const w = window.open(pdfBlobUrl, "_blank");
-        if (w) {
-          // Algunos navegadores imprimen al cargar, otros no
-          w.onload = () => { try { w.print(); } catch(e){} };
-        } else {
-          alert("El navegador bloqueó la impresión en pestaña. Descarga el PDF e imprime.");
-        }
-      }
-    } catch(e) {
-      // Fallback final
-      const w = window.open(pdfBlobUrl, "_blank");
-      if (!w) alert("Tu navegador bloqueó la impresión. Descarga el PDF e imprime.");
-    }
-  };
-
-  // Mostrar modal de vista
   document.getElementById("modalVistaPDF").style.display = "flex";
   cerrarInforme();
 }
+
 function cerrarVistaPDF() {
   const modal = document.getElementById("modalVistaPDF");
   modal.style.display = "none";
   const frame = document.getElementById("pdfVista");
   frame.src = "about:blank";
-  if (pdfBlobUrl) { URL.revokeObjectURL(pdfBlobUrl); pdfBlobUrl = null; }
 }
 
-// Inicializar
 mostrarTabla();
 </script>
 </body>
